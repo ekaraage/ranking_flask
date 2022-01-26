@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% block title %}
+全てのランキング - {{super()}}
+{% endblock %}
+
+{% block flash %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-success rounded" role="alert">
+	{{message}}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+{% endblock %}
+
+{% block content %}
+<div class="d-grid gap-2 col-9 mx-auto">
+	<button class="btn btn-primary my-2" type="button" onclick="location.href='./add_ranking/'"
+		class="btn btn-primary">+
+		新しいIRを作成する</button>
+</div>
+<div class="container">
+	<div class="table-responsive">
+		<table class="table">
+			<thead>
+				<tr>
+					<th>IR名</th>
+					<th>開催日時</th>
+					<th>編集</th>
+					<th>削除</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for i in all_ir %}
+				<tr>
+					<th><a href="./status/{{i.id}}">{{i.title}}</th>
+					<th>{{i.date_start}}~{{i.date_end}}</th>
+					<th>
+						<a href="./status/{{i.id}}/modify/">編集</a>
+					</th>
+					<th>
+						<a href="./status/{{i.id}}/delete/">削除</a>
+					</th>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</div>
+{% endblock %}

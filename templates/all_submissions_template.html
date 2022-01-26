@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% block title %}{{title}}/{{ir_title}} - {{super()}}{% endblock %}
+
+{% block flash %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-success rounded" role="alert">
+	{{message}}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+{% endblock %}
+{% block content %}
+<div class="text-center my-2">
+	<h4>{{ir_title}}</h4>
+	<h4>{{model}}</h4>
+	<h1>{{title}}</h1>
+</div>>
+{% if now < date_start %} <h4 class="text-center">まだ{{ir_title}}は始まっていません。</h4>
+	{% elif date_end < now %} <h4 class="text-center">{{ir_title}}は終了しました。</h4>
+		{% else %}
+		<div class="d-grid gap-2 col-9 my-2 mx-auto">
+			<button class="btn btn-primary" type="button" onclick="location.href='./../add_submission/'"
+				class="btn btn-primary">+
+				新しい提出を追加する</button>
+		</div>
+		{% endif %}
+		<div class="container">
+			<div class="table-responsive">
+				<table class="table">
+					<thead>
+						<tr>
+							<th>プレイヤー名</th>
+							<th>スコア</th>
+							<th>コメント</th>
+							<th>編集</th>
+							<th>削除</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for i in all_submissions %}
+						<tr>
+							<th>{{i.name}}</th>
+							<th><a href={{i.url}}>{{i.score}}</a></th>
+							<th>{{i.comment}}</th>
+							<th>
+								<a href="./{{i.id}}/modify/">編集</a>
+							</th>
+							<th>
+								<a href="./{{i.id}}/delete/">削除</a>
+							</th>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</div>
+		{% endblock %}

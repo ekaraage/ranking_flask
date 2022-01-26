@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% block title %}{{title}} - {{super()}}{% endblock %}
+{% block flash %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-success rounded" role="alert">
+	{{message}}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+{% endblock %}
+
+
+{% block content %}
+<div class="text-center my-2">
+	<h1>{{title}}</h1>
+	<h4>開始日時:{{date_start}}</h4>
+	<h4>終了日時:{{date_end}}</h4>
+</div>
+{% if now <= date_end %} <div class="d-grid gap-2 col-9 mx-auto">
+	<button class="btn btn-primary" type="button" onclick="location.href='./add_songs/'" class="btn btn-primary">+
+		新しい曲を追加する</button>
+	</div>
+	{% else %}
+	<h4>{{title}}は終了しました。</h4>
+	{% endif %}
+	<div class="container">
+		<div class="table-responsive">
+			<table class="table">
+				<thead>
+					<tr>
+						<th>機種名</th>
+						<th>曲名</th>
+						<th>編集</th>
+						<th>削除</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for i in all_songs %}
+					<tr>
+						<th>{{i.model}}
+						<th><a href="./songs/{{i.id}}/submissions/">{{i.title}}</th>
+						<th>
+							<a href="./songs/{{i.id}}/modify/">編集</a>
+						</th>
+						<th>
+							<a href="./songs/{{i.id}}/delete/">削除</a>
+						</th>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+	{% endblock %}

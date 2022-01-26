@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block title %}ランキングの追加 - {{super()}}{% endblock %}
+{% block head %}{% endblock %}
+{% block flash %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-warning rounded" role="alert">
+	{{message}}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+{% endblock %}
+
+{% block content %}
+<main class="form-signin col-9 mx-auto">
+	<form method="POST" action="./post/">
+		<h4 class="h4 my-2 fw-normal">IRの情報を入力してください。</h4>
+		<div class="form-floating">
+			<input type="text" class="form-control" id="floating_title" name="title" required>
+			<label for="floating_title">IR名</label>
+		</div>
+		<div class="form-floating">
+			<input type="date" class="form-control" id="floating_date_start" name="date_start" required>
+			<label for="floating_date_start">開始日時</label>
+		</div>
+		<div class="form-floating">
+			<input type="date" class="form-control" id="floating_date_end" name="date_end" required>
+			<label for="floating_date_end">終了日時</label>
+		</div>
+		<div class="form-floating">
+			<input type="text" class="form-control" id="floating_pass" name="password">
+			<label for="floating_pass">編集/削除パス(漏洩してもいいものだけ使ってください)</label>
+		</div>
+		<button class="btn btn-lg btn-primary w-100 mt-2" type="submit">決定</button>
+	</form>
+</main>
+{% endblock %}

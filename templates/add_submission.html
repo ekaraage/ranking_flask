@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block title %}提出の追加 - {{super()}}{% endblock %}
+{% block head %}{% endblock %}
+
+<body>
+	<form method="POST" action="./post/">
+		<p>プレイヤー名:<input type="text" name="name" required></p>
+		<p>スコア(整数値に限る):<input type="number" name="score" required></p>
+		<p>画像のURL:<input type="url" name="url" required></p>
+		<p>コメント:<input type="text" name="comment"></p>
+		<p>編集/削除パス(<b>重要なパスワードを使わないでください!</b>):<input type="text" name="password">
+		<p><input type="submit" value="決定"></p>
+		<input type="reset" value="取消">
+</body>
+
+{% block content %}
+<main class="form-signin col-9 mx-auto">
+	<form method="POST" action="./post/">
+		<h4 class="h4 my-2 fw-normal">追加する提出の情報を入力してください。</h4>
+		<div class="form-floating">
+			<input type="text" class="form-control" id="floating_name" name="name" required>
+			<label for="floating_name">プレイヤー名</label>
+		</div>
+		<div class="form-floating">
+			<input type="number" class="form-control" id="floating_score" name="score" required>
+			<label for="floating_score">スコア</label>
+		</div>
+		<div class="form-floating">
+			<input type="url" class="form-control" id="floating_url" name="url" required>
+			<label for="floating_url">リザルトのURL</label>
+		</div>
+		<div class="form-floating">
+			<input type="text" class="form-control" id="floating_comment" name="comment">
+			<label for="floating_name">コメント</label>
+		</div>
+		<div class="form-floating">
+			<input type="text" class="form-control" id="floating_pass" name="password">
+			<label for="floating_pass">編集/削除パス(漏洩してもいいものだけ使ってください)</label>
+		</div>
+		<button class="btn btn-lg btn-primary w-100 mt-2" type="submit">決定</button>
+	</form>
+</main>
+{% endblock %}
