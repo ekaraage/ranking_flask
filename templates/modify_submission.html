@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block title %}{{ir_title}}の{{title}}への提出の変更 - {{super()}}{% endblock %}
+{% block flash %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-warning rounded" role="alert">
+	{{message}}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+{% endblock %}
+
+{% block content %}
+<main class="form-signin col-9 mx-auto my-2">
+	<form method="POST" action="./post/">
+		<h4 class="h4 fw-normal">{{ir_title}}の{{title}}への提出の情報を変更します。</h4>
+		<h4 class="h4 fw-normal">各情報と、確認のために最初に設定したパスワードを入力してください。</h4>
+		<div class="form-floating">
+			<input value={{name}} type="text" class="form-control" id="floating_name" name="name" required>
+			<label for="floating_name">プレイヤー名</label>
+		</div>
+		<div class="form-floating">
+			<input value={{score}} type="number" class="form-control" id="floating_score" name="score" required>
+			<label for="floating_score">スコア</label>
+		</div>
+		<div class="form-floating">
+			<input value={{url}} type="url" class="form-control" id="floating_url" name="url" required>
+			<label for="floating_url">リザルトのURL</label>
+		</div>
+		<div class="form-floating">
+			<input type="text" class="form-control" id="floating_comment" name="comment" value={{comment}}>
+			<label for="floating_comment">コメント</label>
+		</div>
+		<div class="form-floating">
+			<input type="text" class="form-control" id="floating_pass" name="password">
+			<label for="floating_pass">編集/削除パス</label>
+		</div>
+		<button class="btn btn-lg btn-primary w-100 mt-2" type="submit">決定</button>
+	</form>
+</main>
+{% endblock %}

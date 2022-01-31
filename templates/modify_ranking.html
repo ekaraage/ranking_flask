@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block title %}{{title}}の変更 - {{super()}}{% endblock %}
+{% block flash %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-warning rounded" role="alert">
+	{{message}}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+{% endblock %}
+
+{% block content %}
+<main class="form-signin col-9 mx-auto my-2">
+	<form method="POST" action="./post/">
+		<h4 class="h4 fw-normal">{{title}}の情報を変更します。</h4>
+		<h4 class="h4 fw-normal">各情報と、確認のために最初に設定したパスワードを入力してください。</h4>
+		<div class="form-floating">
+			<input value={{title}} type="text" class="form-control" id="floating_title" name="title" required>
+			<label for="floating_title">IR名</label>
+		</div>
+		<div class="form-floating">
+			<input value={{date_start}} type="date" class="form-control" id="floating_date_start" name="date_start" required>
+			<label for="floating_date_start">開始日時</label>
+		</div>
+		<div class="form-floating">
+			<input value={{date_end}}  type="date" class="form-control" id="floating_date_end" name="date_end" required>
+			<label for="floating_date_end">終了日時</label>
+		</div>
+		<div class="form-floating">
+			<input type="text" class="form-control" id="floating_pass" name="password">
+			<label for="floating_pass">編集/削除パス</label>
+		</div>
+		<button class="btn btn-lg btn-primary w-100 mt-2" type="submit">決定</button>
+	</form>
+</main>
+{% endblock %}

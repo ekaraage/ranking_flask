@@ -17,7 +17,12 @@
 	<h4>{{ir_title}}</h4>
 	<h4>{{model}}</h4>
 	<h1>{{title}}</h1>
-</div>>
+</div>
+<div class="d-grid justify-content-md-end col-9  mx-auto my-2">
+	<button class="btn btn-primary" type="button"
+		onclick="location.href='./export/'" class="btn btn-primary">
+		データをcsvに書き出す</button>
+</div>
 {% if now < date_start %} <h4 class="text-center">まだ{{ir_title}}は始まっていません。</h4>
 	{% elif date_end < now %} <h4 class="text-center">{{ir_title}}は終了しました。</h4>
 		{% else %}
