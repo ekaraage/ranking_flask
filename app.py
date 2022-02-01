@@ -104,7 +104,7 @@ def get_songs_information(id):
     con.row_factory = Row
     cur = con.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS songs(ir_id INTEGER NOT NULL, id INTEGER PRIMARY KEY AUTOINCREMENT,model TEXT NOT NULL, title TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
-    cur.execute("select * from songs")
+    cur.execute("select * from songs order by model")
     songs_data = cur.fetchall()
     con.close()
     return songs_data
