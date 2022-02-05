@@ -27,6 +27,12 @@
 					<li><a href="/rankings/" class="nav-link text-white">IRs</a></li>
 					<li><a href="/faqs/" class="nav-link text-white">FAQs</a></li>
 					<li><a href="/release_notes/" class="nav-link text-white">Release Note</a></li>
+					{% if session['id'] is defined %}
+					<li><a href="#" class="nav-link text-white">Logged in as {{session['id']}}</a></li>
+					<li><a href="/logout/" class="nav-link text-white">Logout</a></li>
+					{% else %}
+					<li><a href="/login/" class="nav-link text-white">Login</a></li>
+					{% endif %}
 				</ul>
 
 			</div>

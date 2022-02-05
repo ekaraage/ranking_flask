@@ -1,5 +1,16 @@
 {% extends "layout.html" %}
 {% block title %}トップページ - {{super()}}{% endblock %}
+{% block flash %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-info rounded" role="alert">
+	{{message}}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+{% endblock %}
 {% block content %}
 <div class="text-center my-5">
 	<h1>IR支援ツール(仮)にようこそ!</h1>

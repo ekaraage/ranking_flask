@@ -4,7 +4,7 @@
 {% with messages = get_flashed_messages() %}
 {% if messages %}
 {% for message in messages %}
-<div class="alert alert-success rounded" role="alert">
+<div class="alert alert-info rounded" role="alert">
 	{{message}}
 </div>
 {% endfor %}
@@ -20,12 +20,18 @@
 	<h4>終了日時:{{date_end}}</h4>
 </div>
 
-{% if now <= date_end %} <div class="d-grid gap-2 col-9 mx-auto">
-	<button class="btn btn-primary" type="button" onclick="location.href='./add_songs/'" class="btn btn-primary">+
-		新しい曲を追加する</button>
+	{% if now > date_end %} 
+		<h4 class="text-center">{{title}}は終了しました。</h4>
+	{% elif session['id'] is defined %}
+	<div class="d-grid gap-2 col-9 mx-auto">
+		<button class="btn btn-primary" type="button" onclick="location.href='./add_songs/'" class="btn btn-primary">+
+			新しい曲を追加する</button>
 	</div>
 	{% else %}
-	<h4>{{title}}は終了しました。</h4>
+	<div class="d-grid gap-2 col-9 mx-auto">
+		<button class="btn btn-primary" type="button" onclick="location.href='./add_songs/'" class="btn btn-primary" disabled>+
+			新しい曲を追加する</button>
+	</div>
 	{% endif %}
 	<div class="container">
 		<div class="table-responsive">
@@ -44,10 +50,14 @@
 						<th>{{i.model}}
 						<th><a href="./songs/{{i.id}}/submissions/">{{i.title}}</th>
 						<th>
+							{% if session['id'] is defined %}
 							<a href="./songs/{{i.id}}/modify/">編集</a>
+							{% endif %}
 						</th>
 						<th>
+							{% if session['id'] is defined %}
 							<a href="./songs/{{i.id}}/delete/">削除</a>
+							{% endif %}
 						</th>
 					</tr>
 					{% endfor %}

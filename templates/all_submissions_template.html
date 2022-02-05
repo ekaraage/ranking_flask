@@ -5,7 +5,7 @@
 {% with messages = get_flashed_messages() %}
 {% if messages %}
 {% for message in messages %}
-<div class="alert alert-success rounded" role="alert">
+<div class="alert alert-info rounded" role="alert">
 	{{message}}
 </div>
 {% endfor %}
@@ -25,10 +25,16 @@
 </div>
 {% if now < date_start %} <h4 class="text-center">まだ{{ir_title}}は始まっていません。</h4>
 	{% elif date_end < now %} <h4 class="text-center">{{ir_title}}は終了しました。</h4>
-		{% else %}
+		{% elif session['id'] is defined %}
 		<div class="d-grid gap-2 col-9 my-2 mx-auto">
 			<button class="btn btn-primary" type="button" onclick="location.href='./../add_submission/'"
 				class="btn btn-primary">+
+				新しい提出を追加する</button>
+		</div>
+		{% else %}
+		<div class="d-grid gap-2 col-9 my-2 mx-auto">
+			<button class="btn btn-primary" type="button" onclick="location.href='./../add_submission/'"
+				class="btn btn-primary" disabled>+
 				新しい提出を追加する</button>
 		</div>
 		{% endif %}
@@ -51,10 +57,14 @@
 							<th><a href={{i.url}}>{{i.score}}</a></th>
 							<th>{{i.comment}}</th>
 							<th>
+								{% if session['id'] is defined %}
 								<a href="./{{i.id}}/modify/">編集</a>
+								{% endif %}
 							</th>
 							<th>
+								{% if session['id'] is defined %}
 								<a href="./{{i.id}}/delete/">削除</a>
+								{% endif %}
 							</th>
 						</tr>
 						{% endfor %}
