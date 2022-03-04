@@ -2,10 +2,10 @@
 {% block title %}{{title}}/{{ir_title}} - {{super()}}{% endblock %}
 
 {% block flash %}
-{% with messages = get_flashed_messages() %}
+{% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-{% for message in messages %}
-<div class="alert alert-info rounded" role="alert">
+{% for category, message in messages %}
+<div class="alert {{category}} rounded" role="alert">
 	{{message}}
 </div>
 {% endfor %}
@@ -19,8 +19,7 @@
 	<h1>{{title}}</h1>
 </div>
 <div class="d-grid justify-content-md-end col-9  mx-auto my-2">
-	<button class="btn btn-primary" type="button"
-		onclick="location.href='./export/'" class="btn btn-primary">
+	<button class="btn btn-primary" type="button" onclick="location.href='./export/'" class="btn btn-primary">
 		データをcsvに書き出す</button>
 </div>
 {% if now < date_start %} <h4 class="text-center">まだ{{ir_title}}は始まっていません。</h4>
@@ -44,6 +43,7 @@
 					<thead>
 						<tr>
 							<th>プレイヤー名</th>
+							<th>所属</th>
 							<th>スコア</th>
 							<th>コメント</th>
 							<th>編集</th>
@@ -54,6 +54,7 @@
 						{% for i in all_submissions %}
 						<tr>
 							<th>{{i.name}}</th>
+							<th>{{i.belongs}}</th>
 							<th><a href={{i.url}}>{{i.score}}</a></th>
 							<th>{{i.comment}}</th>
 							<th>

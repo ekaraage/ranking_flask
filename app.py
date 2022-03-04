@@ -12,6 +12,36 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 
 
+def invalid_input():
+    flash("入力が不正です。", "alert-warning")
+    return
+
+
+def wrong_password():
+    flash("パスワードが違います。", "alert-warning")
+    return
+
+
+def needs_login():
+    flash("ログインしてください。", "alert-danger")
+    return
+
+
+def added_successfully():
+    flash("正常に追加されました。", "alert-success")
+    return
+
+
+def modified_successfully():
+    flash("正常に変更されました。", "alert-success")
+    return
+
+
+def deleted_successfully():
+    flash("削除に成功しました。", "alert-success")
+    return
+
+
 def gen_songs_path(id):
     ret = "./db/"
     ret += str(id)
@@ -53,9 +83,9 @@ def add_submission(name, songs_id, score, url, comment, password_sha_256ed_with_
     path = gen_sub_path(ir_id)
     con = connect(path)
     cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS submissions(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,songs_id INTEGER NOT NULL, score INTEGER NOT NULL, url TEXT, comment TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
-    cur.execute("insert into submissions(name,songs_id,score,url,comment,password_sha_256ed_with_salt,salt) values (:name,:songs_id,:score,:url,:comment,:password_sha_256ed_with_salt,:salt)", {
-        'name': name, 'songs_id': songs_id, 'score': int(score), 'url': url, 'comment': comment, 'password_sha_256ed_with_salt': password_sha_256ed_with_salt, 'salt': salt})
+    cur.execute("CREATE TABLE IF NOT EXISTS submissions(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,songs_id INTEGER NOT NULL, score INTEGER NOT NULL, url TEXT, comment TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL,belongs TEXT)")
+    cur.execute("insert into submissions(name,songs_id,score,url,comment,password_sha_256ed_with_salt,salt,belongs) values (:name,:songs_id,:score,:url,:comment,:password_sha_256ed_with_salt,:salt,:belongs)", {
+        'name': name, 'songs_id': songs_id, 'score': int(score), 'url': url, 'comment': comment, 'password_sha_256ed_with_salt': password_sha_256ed_with_salt, 'salt': salt, 'belongs': session['id']})
     con.commit()
     con.close()
     return
@@ -118,7 +148,7 @@ def get_all_submissions(ir_id, songs_id):
     con = connect(path)
     con.row_factory = Row
     cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS submissions(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,songs_id INTEGER NOT NULL, score INTEGER NOT NULL, url TEXT, comment TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+    cur.execute("CREATE TABLE IF NOT EXISTS submissions(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,songs_id INTEGER NOT NULL, score INTEGER NOT NULL, url TEXT, comment TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL,belongs TEXT)")
     cur.execute("select * from submissions where songs_id=:songs_id order by score desc",
                 {'songs_id': songs_id})
     submissions_data = cur.fetchall()
@@ -182,10 +212,10 @@ def login():
     pass_raw = request.form['password']
     info = get_user_data(id)
     if info == None or not can_auth(pass_raw, info['salt'], info['password_sha_256ed_with_salt']):
-        flash("IDまたはパスワードが間違っています。")
+        flash("IDまたはパスワードが間違っています。", "alert-warning")
         return redirect(url_for("get_login_info"))
     else:
-        flash("ログインに成功しました。")
+        flash("ログインに成功しました。", "alert-success")
         session['id'] = id
         return redirect(url_for("index"))
 
@@ -193,7 +223,7 @@ def login():
 @app.route("/logout/")
 def logout():
     session.pop('id', None)
-    flash("正常にログアウトされました。")
+    flash("正常にログアウトされました。", "alert-success")
     return redirect(url_for("index"))
 
 
@@ -225,7 +255,7 @@ def get_ranking_input():
     if is_logged_in():
         return render_template("add_ranking.html")
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_rankings"))
 
 
@@ -239,13 +269,13 @@ def format_and_add_ranking():
         password_sha256ed, salt = calc_hash(pass_raw)
         if datetime.datetime.strptime(date_start, '%Y-%m-%d') < datetime.datetime.strptime(date_end, '%Y-%m-%d'):
             add_ranking(title, date_start, date_end, password_sha256ed, salt)
-            flash("正常に追加されました。")
+            added_successfully()
             return redirect(url_for("show_all_rankings"))
         else:
-            flash("入力が不正です。")
+            invalid_input()
             return redirect(url_for("get_ranking_input"))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_rankings"))
 
 
@@ -263,7 +293,7 @@ def get_ir_mods(id):
         ir_data = get_one_ranking(id)
         return render_template("modify_ranking.html", id=id, title=ir_data['title'], date_start=datetime.datetime.strptime(ir_data['date_start'], '%Y-%m-%d'), date_end=datetime.datetime.strptime(ir_data['date_end'], '%Y-%m-%d'))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_rankings"))
 
 
@@ -282,7 +312,7 @@ def modify_ir(id):
 
         if(can_auth(pass_raw, salt, pass_hashed)):
             if datetime.datetime.strptime(date_start, '%Y-%m-%d') < datetime.datetime.strptime(date_end, '%Y-%m-%d'):
-                flash("正常に変更されました。")
+                modified_successfully()
                 con = connect("./db/ir_db.db")
                 cur = con.cursor()
                 cur.execute("update irs set title=:title,date_start=:date_start,date_end=:date_end where id=:id", {
@@ -291,13 +321,13 @@ def modify_ir(id):
                 con.close()
                 return redirect(url_for("show_all_rankings"))
             else:
-                flash("入力が不正です。")
+                invalid_input()
                 return redirect(url_for("get_ir_mods", id=id, title=ir_data['title'], date_start=datetime.datetime.strptime(ir_data['date_start'], '%Y-%m-%d'), date_end=datetime.datetime.strptime(ir_data['date_end'], '%Y-%m-%d')))
         else:
-            flash("パスワードが違います。")
+            wrong_password()
             return redirect(url_for("get_ir_mods", id=id, title=ir_data['title'], date_start=datetime.datetime.strptime(ir_data['date_start'], '%Y-%m-%d'), date_end=datetime.datetime.strptime(ir_data['date_end'], '%Y-%m-%d')))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_rankings"))
 
 
@@ -306,7 +336,7 @@ def get_songs_input(id):
     if is_logged_in():
         return render_template("add_songs.html")
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_ranking_details", id=id))
 
 
@@ -318,9 +348,10 @@ def format_and_add_songs(id):
         pass_raw = request.form['password']
         password_sha256ed, salt = calc_hash(pass_raw)
         add_songs(id, model, title, password_sha256ed, salt)
+        added_successfully()
         return redirect(url_for("show_ranking_details", id=id))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_ranking_details", id=id))
 
 
@@ -330,7 +361,7 @@ def get_ir_pass(id):
         ir_data = get_one_ranking(id)
         return render_template("delete.html", title=ir_data['title'])
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_rankings"))
 
 
@@ -350,17 +381,17 @@ def delete_ranking(id):
             cur.execute("delete from irs where id=:id", {'id': id})
             con.commit()
             con.close()
-            flash("削除に成功しました。")
+            deleted_successfully()
             # もしディレクトリも削除するなら、以下のコメントアウトを外す
             # path = "./db/"
             # path += str(id)
             # shutil.rmtree(path)
             return redirect(url_for("show_all_rankings"))
         else:
-            flash("パスワードが違います。")
+            wrong_password()
             return redirect(url_for("get_ir_pass", id=id))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_rankings"))
 
 
@@ -397,7 +428,7 @@ def get_songs_pass(ir_id, songs_id):
         ir_data = get_one_ranking(ir_id)
         return render_template("delete.html", title=ir_data['title']+"から"+songs_data['title'])
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_ranking_details", id=id))
 
 
@@ -416,13 +447,13 @@ def delete_songs(ir_id, songs_id):
             cur.execute("delete from songs where id=:id", {'id': songs_id})
             con.commit()
             con.close()
-            flash("削除に成功しました。")
+            deleted_successfully()
             return redirect(url_for("show_ranking_details", id=ir_id))
         else:
-            flash("パスワードが違います。")
+            wrong_password()
             return redirect(url_for("get_songs_pass", ir_id=ir_id, songs_id=songs_id))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_ranking_details", id=ir_id))
 
 
@@ -433,7 +464,7 @@ def get_song_mod(ir_id, songs_id):
         ir_data = get_one_ranking(ir_id)
         return render_template("modify_song.html", ir_title=ir_data['title'], model=songs_data['model'], title=songs_data['title'])
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_ranking_details", id=ir_id))
 
 
@@ -446,7 +477,7 @@ def modify_song(ir_id, songs_id):
         title = request.form['title']
         pass_raw = request.form['password']
         if can_auth(pass_raw, songs_data['salt'], songs_data['password_sha_256ed_with_salt']):
-            flash("正常に変更されました。")
+
             path = gen_songs_path(ir_id)
             con = connect(path)
             cur = con.cursor()
@@ -454,13 +485,13 @@ def modify_song(ir_id, songs_id):
                 'model': model, 'title': title, 'id': songs_id})
             con.commit()
             con.close()
-
+            modified_successfully()
             return redirect(url_for("show_ranking_details", id=ir_id))
         else:
-            flash("パスワードが違います。")
+            wrong_password()
             return redirect(url_for("get_song_mod", ir_id=ir_id, songs_id=songs_id, ir_title=ir_data['title'], title=songs_data['title'], model=songs_data['model']))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_ranking_details", id=ir_id))
 
 
@@ -469,7 +500,7 @@ def get_submission_input(ir_id, songs_id):
     if is_logged_in():
         return render_template("add_submission.html")
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
 
 
@@ -484,10 +515,10 @@ def format_and_add_submission(ir_id, songs_id):
         password_sha256ed, salt = calc_hash(pass_raw)
         add_submission(name, songs_id, score, url,
                        comment, password_sha256ed, salt, ir_id)
-        flash("正常に追加されました。")
+        added_successfully()
         return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
 
 
@@ -499,7 +530,7 @@ def get_submission_pass(ir_id, songs_id, sub_id):
 
         return render_template("delete.html", title=ir_data['title']+"の"+songs_data['title']+"への提出")
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
 
 
@@ -517,13 +548,13 @@ def delete_submissions(ir_id, songs_id, sub_id):
         if(can_auth(pass_raw, sub_data['salt'], sub_data['password_sha_256ed_with_salt'])):
             cur.execute("delete from submissions where id=:id", {'id': sub_id})
             con.commit()
-            flash("削除に成功しました。")
+            deleted_successfully()
             return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
         else:
-            flash("パスワードが違います。")
+            wrong_password()
             return redirect(url_for("get_submission_pass", ir_id=ir_id, songs_id=songs_id, sub_id=sub_id))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
 
 
@@ -535,7 +566,7 @@ def get_sub_mod(ir_id, songs_id, sub_id):
         sub_data = get_one_submission(ir_id, songs_id, sub_id)
         return render_template("modify_submission.html", ir_title=ir_data['title'], title=songs_data['title'], name=sub_data['name'], score=sub_data['score'], url=sub_data['url'], comment=sub_data['comment'])
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
 
 
@@ -551,7 +582,7 @@ def modify_sub(ir_id, songs_id, sub_id):
         comment = request.form['comment']
         pass_raw = request.form['password']
         if can_auth(pass_raw, sub_data['salt'], sub_data['password_sha_256ed_with_salt']):
-            flash("正常に変更されました。")
+            modified_successfully()
             path = gen_sub_path(ir_id)
             con = connect(path)
             cur = con.cursor()
@@ -561,10 +592,10 @@ def modify_sub(ir_id, songs_id, sub_id):
             con.close()
             return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
         else:
-            flash("パスワードが違います。")
+            wrong_password()
             return redirect(url_for("get_sub_mod", ir_id=ir_id, songs_id=songs_id, sub_id=sub_id, ir_title=ir_data['title'], title=songs_data['title'], name=sub_data['name'], score=sub_data['score'], url=sub_data['url'], comment=sub_data['comment']))
     else:
-        flash("ログインしてください。")
+        needs_login()
         return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
 
 
