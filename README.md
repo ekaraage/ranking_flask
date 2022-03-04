@@ -1,5 +1,5 @@
 # Name
-IR支援ツール(仮)
+Otoge Ranking 4 Competitive League Encouragement (OR4CLE)
 # Overview
 音ゲーのIRを開催する人向けの、スコア集計補助ツールです。
 IR、曲、提出は編集、削除が可能。結果発表の際の補助として、スコアのcsv書き出しにも対応。
