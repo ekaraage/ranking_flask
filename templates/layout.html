@@ -19,22 +19,23 @@
 <body>
 	<header class="p-1 bg-dark text-white">
 		<div class="container">
-			<div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
-				<ul class="nav col-12 col-lg-auto me-lg-auto justify-content-center mb-md-0">
-					<a href="/" class="d-flex align-items-center me-md-auto text-decoration-none text-white">
+			<div class="d-flex flex-wrap">
+				<ul class="nav col-3 col-lg-auto me-lg-auto mb-md-0">
+					<a href="/" class="d-flex me-md-auto text-decoration-none text-white">
 						<span class="fs-4">OR4CLE</span>
 					</a>
-					<li><a href="/rankings/" class="nav-link text-white">IRs</a></li>
-					<li><a href="/faqs/" class="nav-link text-white">FAQs</a></li>
-					<li><a href="/release_notes/" class="nav-link text-white">Release Note</a></li>
-					{% if session['id'] is defined %}
-					<li><a href="#" class="nav-link text-white">Logged in as {{session['id']}}</a></li>
-					<li><a href="/logout/" class="nav-link text-white">Logout</a></li>
-					{% else %}
-					<li><a href="/login/" class="nav-link text-white">Login</a></li>
-					{% endif %}
 				</ul>
-
+				<ul class="nav col-9 justify-content-end">
+				<li><a href="/rankings/" class="nav-link text-white">IRs</a></li>
+				<li><a href="/faqs/" class="nav-link text-white">FAQs</a></li>
+				<li><a href="/release_notes/" class="nav-link text-white">Release Note</a></li>
+				{% if session['id'] is defined %}
+				<li><a href="#" class="nav-link text-white">Logged in as {{session['id']}}</a></li>
+				<li><a href="/logout/" class="nav-link text-white">Logout</a></li>
+				{% else %}
+				<li><a href="/login/" class="nav-link text-white">Login</a></li>
+				{% endif %}
+				</ul>
 			</div>
 		</div>
 	</header>

@@ -3,7 +3,7 @@
 from crypt import methods
 import datetime
 import hashlib
-from flask import Flask, flash, redirect, render_template, request, send_file, url_for, session
+from flask import Flask, flash, jsonify, redirect, render_template, request, send_file, url_for, session
 from sqlite3 import connect, Row
 import random
 import os
@@ -199,6 +199,32 @@ def is_logged_in():
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/api/contest/")
+def get_all_contest_in_json():
+    path = "./db/ir_db.db"
+    con = connect(path)
+    cur = con.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS irs(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, date_start TEXT NOT NULL, date_end TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+    cur.execute("select id,title,date_start,date_end from irs order by id desc")
+    all_ir_data = cur.fetchall()
+    con.close()
+    return jsonify(all_ir_data)
+
+
+@app.route("/api/contest_detail/<id>/", methods=["GET"])
+def get_contest_detail_in_json(id):
+    path = "./db/"
+    path += str(id)
+    os.makedirs(path, exist_ok=True)
+    path += "/songs.db"
+    con = connect(path)
+    cur = con.cursor()
+    cur.execute("select id,model,title from songs order by id desc")
+    one_ir_detail = cur.fetchone()
+    con.close()
+    return jsonify(one_ir_detail)
 
 
 @app.route("/login/")
