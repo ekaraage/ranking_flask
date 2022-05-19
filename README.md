@@ -13,4 +13,4 @@ Herokuにdeployして運用するとき、dbは外部ストレージにおいて
 # Terms of service
 このサービスを使用して起こった損害については、その一切の責任を負いません。
 # Author
-ekaraage(twitter:[@ekaraage](https://twitter.com/ekaraage/))
+ekaraage

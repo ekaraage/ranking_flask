@@ -14,55 +14,65 @@
 
 
 {% block content %}
+<div class="d-grid justify-content-md-start col-9  mx-auto my-2">
+<nav aria-label="breadcrumb">
+	<ol class="breadcrumb">
+		<li class="breadcrumb-item"><a href="/rankings/">IR一覧</a></li>
+		<li class="breadcrumb-item active" aria-current="page">{{title}}</li>
+	</ol>
+</nav>
+</div>
+
 <div class="text-center my-2">
 	<h1>{{title}}</h1>
 	<h4>開始日時:{{date_start}}</h4>
 	<h4>終了日時:{{date_end}}</h4>
 </div>
 
-	{% if now > date_end %} 
-		<h4 class="text-center">{{title}}は終了しました。</h4>
-	{% elif session['id'] is defined %}
-	<div class="d-grid gap-2 col-9 mx-auto">
-		<button class="btn btn-primary" type="button" onclick="location.href='./add_songs/'" class="btn btn-primary">+
-			新しい曲を追加する</button>
+{% if now > date_end %}
+<h4 class="text-center">{{title}}は終了しました。</h4>
+{% elif session['id'] is defined %}
+<div class="d-grid gap-2 col-9 mx-auto">
+	<button class="btn btn-primary" type="button" onclick="location.href='./add_songs/'" class="btn btn-primary">+
+		新しい曲を追加する</button>
+</div>
+{% else %}
+<div class="d-grid gap-2 col-9 mx-auto">
+	<button class="btn btn-primary" type="button" onclick="location.href='./add_songs/'" class="btn btn-primary"
+		disabled>+
+		新しい曲を追加する</button>
+</div>
+{% endif %}
+<div class="container">
+	<div class="table-responsive">
+		<table class="table">
+			<thead>
+				<tr>
+					<th>機種名</th>
+					<th>曲名</th>
+					<th>編集</th>
+					<th>削除</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for i in all_songs %}
+				<tr>
+					<th>{{i.model}}
+					<th><a href="./songs/{{i.id}}/submissions/">{{i.title}}</th>
+					<th>
+						{% if session['id'] is defined %}
+						<a href="./songs/{{i.id}}/modify/">編集</a>
+						{% endif %}
+					</th>
+					<th>
+						{% if session['id'] is defined %}
+						<a href="./songs/{{i.id}}/delete/">削除</a>
+						{% endif %}
+					</th>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
 	</div>
-	{% else %}
-	<div class="d-grid gap-2 col-9 mx-auto">
-		<button class="btn btn-primary" type="button" onclick="location.href='./add_songs/'" class="btn btn-primary" disabled>+
-			新しい曲を追加する</button>
-	</div>
-	{% endif %}
-	<div class="container">
-		<div class="table-responsive">
-			<table class="table">
-				<thead>
-					<tr>
-						<th>機種名</th>
-						<th>曲名</th>
-						<th>編集</th>
-						<th>削除</th>
-					</tr>
-				</thead>
-				<tbody>
-					{% for i in all_songs %}
-					<tr>
-						<th>{{i.model}}
-						<th><a href="./songs/{{i.id}}/submissions/">{{i.title}}</th>
-						<th>
-							{% if session['id'] is defined %}
-							<a href="./songs/{{i.id}}/modify/">編集</a>
-							{% endif %}
-						</th>
-						<th>
-							{% if session['id'] is defined %}
-							<a href="./songs/{{i.id}}/delete/">削除</a>
-							{% endif %}
-						</th>
-					</tr>
-					{% endfor %}
-				</tbody>
-			</table>
-		</div>
-	</div>
-	{% endblock %}
+</div>
+{% endblock %}
