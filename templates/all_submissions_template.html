@@ -5,22 +5,31 @@
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 {% for category, message in messages %}
+{% if message == '正常に登録されました。' %}
+<div class="alert {{category}} rounded" role="alert">
+	{{message}}
+	<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-text="{{tweet}}" data-url=" "
+		data-show-count="false">Tweet</a>
+	<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+{% else %}
 <div class="alert {{category}} rounded" role="alert">
 	{{message}}
 </div>
+{% endif %}
 {% endfor %}
 {% endif %}
 {% endwith %}
 {% endblock %}
 {% block content %}
 <div class="d-grid justify-content-md-start col-9  mx-auto my-2">
-<nav aria-label="breadcrumb">
-	<ol class="breadcrumb">
-		<li class="breadcrumb-item"><a href="/rankings/">IR一覧</a></li>
-		<li class="breadcrumb-item"><a href="./../../../">{{ir_title}}</a></li>
-		<li class="breadcrumb-item active" aria-current="page">{{title}}</li>
-	</ol>
-</nav>
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb">
+			<li class="breadcrumb-item"><a href="/rankings/">IR一覧</a></li>
+			<li class="breadcrumb-item"><a href="./../../../">{{ir_title}}</a></li>
+			<li class="breadcrumb-item active" aria-current="page">{{title}}</li>
+		</ol>
+	</nav>
 </div>
 <div class="text-center my-2">
 	<h4>{{ir_title}}</h4>

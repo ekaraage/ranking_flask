@@ -3,7 +3,7 @@
 from crypt import methods
 import datetime
 import hashlib
-from flask import Flask, flash, jsonify, redirect, render_template, request, send_file, url_for, session
+from flask import Flask, flash, g, jsonify, redirect, render_template, request, send_file, url_for, session
 from sqlite3 import connect, Row
 import random
 import os
@@ -29,6 +29,11 @@ def needs_login():
 
 def added_successfully():
     flash("正常に追加されました。", "alert-success")
+    return
+
+
+def uploaded_successfully():
+    flash("正常に登録されました。", "alert-success")
     return
 
 
@@ -425,10 +430,12 @@ def delete_ranking(id):
 def show_all_submissions(ir_id, songs_id):
     songs_data = get_one_song(ir_id, songs_id)
     ir_data = get_one_ranking(ir_id)
-
+    tw = None
+    if 'tweet' in session:
+        tw = session['tweet']
     now = datetime.datetime.today()
 
-    return render_template("all_submissions_template.html", title=songs_data['title'], model=songs_data['model'], all_submissions=get_all_submissions(ir_id, songs_id), now=now, date_start=datetime.datetime.strptime(ir_data['date_start'], '%Y-%m-%d'), date_end=datetime.datetime.strptime(ir_data['date_end'], '%Y-%m-%d'), ir_title=ir_data['title'])
+    return render_template("all_submissions_template.html", title=songs_data['title'], model=songs_data['model'], all_submissions=get_all_submissions(ir_id, songs_id), now=now, date_start=datetime.datetime.strptime(ir_data['date_start'], '%Y-%m-%d'), date_end=datetime.datetime.strptime(ir_data['date_end'], '%Y-%m-%d'), ir_title=ir_data['title'], tweet=tw)
 
 
 @app.route("/rankings/status/<ir_id>/songs/<songs_id>/submissions/export/")
@@ -541,7 +548,11 @@ def format_and_add_submission(ir_id, songs_id):
         password_sha256ed, salt = calc_hash(pass_raw)
         add_submission(name, songs_id, score, url,
                        comment, password_sha256ed, salt, ir_id)
-        added_successfully()
+        ir_data = get_one_ranking(ir_id)
+        songs_data = get_one_song(ir_id, songs_id)
+        st = ir_data['title'] + "の" + songs_data['title'] + "に登録しました！\nスコア:" + str(score) +"\nコメント:"+ comment + "\n締め切りは"+ir_data['date_end']+"まで！\n#PUCIR"
+        session['tweet'] = st
+        uploaded_successfully()
         return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
     else:
         needs_login()
