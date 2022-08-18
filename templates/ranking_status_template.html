@@ -58,15 +58,15 @@
 				{% for i in all_songs %}
 				<tr>
 					<th>{{i.model}}
-					<th><a href="./songs/{{i.id}}/submissions/">{{i.title}}</th>
+					<th><a href="./songs/{{i.songs_id}}/submissions/">{{i.title}}</th>
 					<th>
 						{% if session['id'] is defined %}
-						<a href="./songs/{{i.id}}/modify/">編集</a>
+						<a href="./songs/{{i.songs_id}}/modify/">編集</a>
 						{% endif %}
 					</th>
 					<th>
 						{% if session['id'] is defined %}
-						<a href="./songs/{{i.id}}/delete/">削除</a>
+						<a href="./songs/{{i.songs_id}}/delete/">削除</a>
 						{% endif %}
 					</th>
 				</tr>
