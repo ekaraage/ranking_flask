@@ -43,16 +43,16 @@
 			<tbody>
 				{% for i in all_ir %}
 				<tr>
-					<th><a href="./status/{{i.id}}">{{i.title}}</th>
+					<th><a href="./status/{{i.ir_id}}">{{i.title}}</th>
 					<th>{{i.date_start}}~{{i.date_end}}</th>
 					<th>
 						{% if session['id'] is defined %}
-						<a href="./status/{{i.id}}/modify/">編集</a>
+						<a href="./status/{{i.ir_id}}/modify/">編集</a>
 						{% endif %}
 					</th>
 					<th>
 						{% if session['id'] is defined %}
-						<a href="./status/{{i.id}}/delete/">削除</a>
+						<a href="./status/{{i.ir_id}}/delete/">削除</a>
 						{% endif %}
 					</th>
 				</tr>

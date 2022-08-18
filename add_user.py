@@ -1,6 +1,12 @@
-from sqlite3 import connect, Row
+import psycopg2
 import random
 import hashlib
+import os
+
+
+def connect():
+    url=os.environ.get('DATABASE_URL')
+    return psycopg2.connect(url)
 
 
 def gen_salt():
@@ -27,14 +33,13 @@ def main():
     pass_raw = input()
     password_sha_256ed_with_salt, salt = calc_hash(pass_raw)
 
-    con = connect("./db/user.db")
-    cur = con.cursor()
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
-    cur.execute("insert into users(id,password_sha_256ed_with_salt,salt) values (:id,:password_sha_256ed_with_salt,:salt)", {
-                'id': id, 'password_sha_256ed_with_salt': password_sha_256ed_with_salt, 'salt': salt})
-    con.commit()
-    con.close()
+    with connect() as con:
+        with con.cursor() as cur:
+            cur.execute(
+                "CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+            cur.execute("insert into users(id,password_sha_256ed_with_salt,salt) values (%s,%s,%s)", (
+                id, password_sha_256ed_with_salt, salt))
+            con.commit()
 
 
 if __name__ == "__main__":
