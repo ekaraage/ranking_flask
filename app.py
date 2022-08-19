@@ -15,7 +15,7 @@ app.config['SECRET_KEY'] = os.urandom(24)
 
 
 def connect():
-    url=os.environ.get('DATABASE_URL')
+    url = os.environ.get('DATABASE_URL')
     return psycopg2.connect(url)
 
 
@@ -405,9 +405,23 @@ def show_all_submissions(ir_id, songs_id):
 
 
 @app.route("/rankings/status/<ir_id>/songs/<songs_id>/submissions/export/")
+def get_ir_password(ir_id, songs_id):
+    ir_data = get_one_ranking(ir_id)
+    songs_data = get_one_song(songs_id)
+    if is_logged_in():
+        return render_template("download.html", ir_title=ir_data['title'], title=songs_data['title'])
+    else:
+        needs_login()
+        return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
+
+
+@app.route("/rankings/status/<ir_id>/songs/<songs_id>/submissions/export/post/", methods=['POST'])
 def make_csv(ir_id, songs_id):
-    titl = get_one_ranking(ir_id)['title']
-    titl.append(get_one_song(songs_id)['title'])
+    ir_data = get_one_ranking(ir_id)
+    songs_data = get_one_song(songs_id)
+    pass_raw = request.form['password']
+    titl = [ir_data['title']]
+    titl.append(songs_data['title'])
     header = ['name', 'score', 'comment']
     path = "./db/" + str(ir_id) + "/export_" + \
         str(ir_id) + "_" + str(songs_id) + ".csv"
@@ -420,7 +434,15 @@ def make_csv(ir_id, songs_id):
         for data in sub_datas:
             target = [data['name'], data['score'], data['comment']]
             writer.writerow(target)
-    return send_file(path, as_attachment=True, attachment_filename=file_name, mimetype="text/csv")
+    if is_logged_in():
+        if can_auth(pass_raw, ir_data['salt'], ir_data['password_sha_256ed_with_salt']):
+            return send_file(path, as_attachment=True, attachment_filename=file_name, mimetype="text/csv")
+        else:
+            wrong_password()
+            return redirect(url_for("get_ir_password", ir_id=ir_id, songs_id=songs_id))
+    else:
+        needs_login()
+        return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
 
 
 @app.route("/rankings/status/<ir_id>/songs/<songs_id>/delete/")
