@@ -3,13 +3,20 @@
 from crypt import methods
 import datetime
 import hashlib
+from webbrowser import get
 from flask import Flask, flash, g, jsonify, redirect, render_template, request, send_file, url_for, session
-from sqlite3 import connect, Row
 import random
 import os
 import csv
+from psycopg2.extras import DictCursor
+import psycopg2
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
+
+
+def connect():
+    url = os.environ.get('DATABASE_URL')
+    return psycopg2.connect(url)
 
 
 def invalid_input():
@@ -61,104 +68,82 @@ def gen_sub_path(id):
     return ret
 
 
-def add_ranking(ir_title, date_start, date_end, password_sha_256ed_with_salt, salt):
-    con = connect("./db/ir_db.db")
-    cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS irs(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, date_start TEXT NOT NULL, date_end TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
-    cur.execute("insert into irs(title,date_start,date_end,password_sha_256ed_with_salt,salt) values (:title,:date_start,:date_end,:password_sha_256ed_with_salt,:salt)", {
-                'title': ir_title, 'date_start': date_start, 'date_end': date_end, 'password_sha_256ed_with_salt': password_sha_256ed_with_salt, 'salt': salt})
-    con.commit()
-    con.close()
+def add_ranking(ir_title, date_start, date_end, is_visible, password_sha_256ed_with_salt, salt):
+    with connect() as con:
+        with con.cursor() as cur:
+            cur.execute("CREATE TABLE IF NOT EXISTS irs(ir_id SERIAL PRIMARY KEY , title TEXT NOT NULL, date_start TEXT NOT NULL, date_end TEXT NOT NULL,is_visible INTEGER NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+            cur.execute("insert into irs(title,date_start,date_end,is_visible,password_sha_256ed_with_salt,salt) values (%s,%s,%s,%s,%s,%s)", (
+                ir_title, date_start, date_end, int(is_visible), password_sha_256ed_with_salt, salt))
     return
 
 
-def add_songs(id, model, title, password_sha_256ed_with_salt, salt):
-    path = gen_songs_path(id)
-    con = connect(path)
-    cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS songs(ir_id INTEGER NOT NULL, id INTEGER PRIMARY KEY AUTOINCREMENT,model TEXT NOT NULL, title TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
-    cur.execute("insert into songs(ir_id,model,title,password_sha_256ed_with_salt,salt) values (:ir_id,:model,:title,:password_sha_256ed_with_salt,:salt)", {
-                'ir_id': int(id), 'model': model, 'title': title, 'password_sha_256ed_with_salt': password_sha_256ed_with_salt, 'salt': salt})
-    con.commit()
-    con.close()
+def add_songs(ir_id, model, title, password_sha_256ed_with_salt, salt):
+    with connect() as con:
+        with con.cursor() as cur:
+            cur.execute("CREATE TABLE IF NOT EXISTS songs(songs_id SERIAL PRIMARY KEY ,ir_id INTEGER NOT NULL, model TEXT NOT NULL, title TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+            cur.execute("insert into songs(ir_id,model,title,password_sha_256ed_with_salt,salt) values (%s,%s,%s,%s,%s)", (
+                int(ir_id), model, title, password_sha_256ed_with_salt, salt))
+
     return
 
 
-def add_submission(name, songs_id, score, url, comment, password_sha_256ed_with_salt, salt, ir_id):
-    path = gen_sub_path(ir_id)
-    con = connect(path)
-    cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS submissions(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,songs_id INTEGER NOT NULL, score INTEGER NOT NULL, url TEXT, comment TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL,belongs TEXT)")
-    cur.execute("insert into submissions(name,songs_id,score,url,comment,password_sha_256ed_with_salt,salt,belongs) values (:name,:songs_id,:score,:url,:comment,:password_sha_256ed_with_salt,:salt,:belongs)", {
-        'name': name, 'songs_id': songs_id, 'score': int(score), 'url': url, 'comment': comment, 'password_sha_256ed_with_salt': password_sha_256ed_with_salt, 'salt': salt, 'belongs': session['id']})
-    con.commit()
-    con.close()
+def add_submission(name, songs_id, score, url, comment, password_sha_256ed_with_salt, salt):
+    with connect() as con:
+        with con.cursor() as cur:
+            cur.execute("CREATE TABLE IF NOT EXISTS submissions(sub_id SERIAL PRIMARY KEY ,name TEXT NOT NULL,songs_id INTEGER NOT NULL, score INTEGER NOT NULL, url TEXT, comment TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL,belongs TEXT)")
+            cur.execute("insert into submissions(name,songs_id,score,url,comment,password_sha_256ed_with_salt,salt,belongs) values (%s,%s,%s,%s,%s,%s,%s,%s)", (
+                name, int(songs_id), int(score), url, comment, password_sha_256ed_with_salt, salt, session['id']))
+
     return
 
 
-def get_one_ranking(id):
-    path = "./db/ir_db.db"
-    con = connect(path)
-    con.row_factory = Row
-    cur = con.cursor()
-    cur.execute("select * from irs where id=:id", {'id': id})
-    ir_data = cur.fetchone()
-    con.close()
-    return ir_data
+def get_one_ranking(ir_id):
+    with connect() as con:
+        with con.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("select * from irs where ir_id=%s", (ir_id,))
+            ir_data = cur.fetchone()
+            return ir_data
 
 
-def get_one_song(ir_id, songs_id):
-    path = gen_songs_path(ir_id)
-    con = connect(path)
-    con.row_factory = Row
-    cur = con.cursor()
-    cur.execute(
-        "select * from songs where id=:id", {'id': songs_id})
-    songs_data = cur.fetchone()
-    con.close()
-    return songs_data
+def get_one_song(songs_id):
+    with connect() as con:
+        with con.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("select * from songs where songs_id=%s", (songs_id,))
+            songs_data = cur.fetchone()
+            return songs_data
 
 
-def get_one_submission(ir_id, songs_id, sub_id):
-    path = gen_sub_path(ir_id)
-    con = connect(path)
-    con.row_factory = Row
-    cur = con.cursor()
-    cur.execute("select * from submissions where id=:id", {'id': sub_id})
-    sub_data = cur.fetchone()
-    con.close()
-    return sub_data
+def get_one_submission(sub_id):
+    with connect() as con:
+        with con.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute(
+                "select * from submissions where sub_id=%s", (sub_id,))
+            sub_data = cur.fetchone()
+            return sub_data
 
 
-def get_songs_information(id):
-    path = "./db/"
-    path += str(id)
-    os.makedirs(path, exist_ok=True)
-    path += "/songs.db"
-    con = connect(path)
-    con.row_factory = Row
-    cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS songs(ir_id INTEGER NOT NULL, id INTEGER PRIMARY KEY AUTOINCREMENT,model TEXT NOT NULL, title TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
-    cur.execute("select * from songs order by model")
-    songs_data = cur.fetchall()
-    con.close()
-    return songs_data
+def get_songs_information(ir_id):
+    with connect() as con:
+        with con.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("CREATE TABLE IF NOT EXISTS songs(songs_id SERIAL PRIMARY KEY,ir_id INTEGER NOT NULL, model TEXT NOT NULL, title TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+            cur.execute(
+                "select * from songs where ir_id=%s order by model,title", (ir_id,))
+            songs_data = cur.fetchall()
+            return songs_data
 
 
-def get_all_submissions(ir_id, songs_id):
-    path = "./db/"
-    path += str(ir_id)
-    os.makedirs(path, exist_ok=True)
-    path += "/submissions.db"
-    con = connect(path)
-    con.row_factory = Row
-    cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS submissions(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,songs_id INTEGER NOT NULL, score INTEGER NOT NULL, url TEXT, comment TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL,belongs TEXT)")
-    cur.execute("select * from submissions where songs_id=:songs_id order by score desc",
-                {'songs_id': songs_id})
-    submissions_data = cur.fetchall()
-    con.close()
-    return submissions_data
+def get_all_submissions(songs_id, is_visible):
+    with connect() as con:
+        with con.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("CREATE TABLE IF NOT EXISTS submissions(sub_id SERIAL PRIMARY KEY,name TEXT NOT NULL,songs_id INTEGER NOT NULL, score INTEGER NOT NULL, url TEXT, comment TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL,belongs TEXT)")
+            if is_visible == 1:
+                cur.execute(
+                    "select * from submissions where songs_id=%s order by score desc", (songs_id,))
+            else:
+                cur.execute(
+                    "select * from submissions where songs_id=%s order by sub_id desc", (songs_id,))
+            submissions_data = cur.fetchall()
+            return submissions_data
 
 
 def can_auth(pass_raw, salt, password_sha256_ed):
@@ -186,15 +171,13 @@ def calc_hash(password):
 
 
 def get_user_data(id):
-    path = "./db/user.db"
-    con = connect(path)
-    con.row_factory = Row
-    cur = con.cursor()
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
-    cur.execute("select * from users where id=:id", {'id': id})
-    user_data = cur.fetchone()
-    return user_data
+    with connect() as con:
+        with con.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute(
+                "CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+            cur.execute("select * from users where id=%s", (id,))
+            user_data = cur.fetchone()
+            return user_data
 
 
 def is_logged_in():
@@ -208,28 +191,23 @@ def index():
 
 @app.route("/api/contest/")
 def get_all_contest_in_json():
-    path = "./db/ir_db.db"
-    con = connect(path)
-    cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS irs(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, date_start TEXT NOT NULL, date_end TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
-    cur.execute("select id,title,date_start,date_end from irs order by id desc")
-    all_ir_data = cur.fetchall()
-    con.close()
-    return jsonify(all_ir_data)
+    with connect() as con:
+        with con.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("CREATE TABLE IF NOT EXISTS irs(ir_id SERIAL PRIMARY KEY, title TEXT NOT NULL, date_start TEXT NOT NULL, date_end TEXT NOT NULL,is_visible INTEGER NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+            cur.execute(
+                "select ir_id,title,date_start,date_end from irs order by ir_id desc")
+            all_ir_data = cur.fetchall()
+            return jsonify(all_ir_data)
 
 
 @app.route("/api/contest_detail/<id>/", methods=["GET"])
 def get_contest_detail_in_json(id):
-    path = "./db/"
-    path += str(id)
-    os.makedirs(path, exist_ok=True)
-    path += "/songs.db"
-    con = connect(path)
-    cur = con.cursor()
-    cur.execute("select id,model,title from songs order by id desc")
-    one_ir_detail = cur.fetchone()
-    con.close()
-    return jsonify(one_ir_detail)
+    with connect() as con:
+        with con.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute(
+                "select id,model,title from songs where ir_id=%s order by model,title desc", (id,))
+            one_ir_detail = cur.fetchone()
+            return jsonify(one_ir_detail)
 
 
 @app.route("/login/")
@@ -242,7 +220,7 @@ def login():
     id = request.form['id']
     pass_raw = request.form['password']
     info = get_user_data(id)
-    if info == None or not can_auth(pass_raw, info['salt'], info['password_sha_256ed_with_salt']):
+    if info is None or not can_auth(pass_raw, info['salt'], info['password_sha_256ed_with_salt']):
         flash("IDまたはパスワードが間違っています。", "alert-warning")
         return redirect(url_for("get_login_info"))
     else:
@@ -270,15 +248,12 @@ def release_note():
 
 @app.route("/rankings/")
 def show_all_rankings():
-    path = "./db/ir_db.db"
-    con = connect(path)
-    con.row_factory = Row
-    cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS irs(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, date_start TEXT NOT NULL, date_end TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
-    cur.execute("select * from irs order by id desc")
-    all_ir_data = cur.fetchall()
-    con.close()
-    return render_template("all_ranking_template.html", all_ir=all_ir_data)
+    with connect() as con:
+        with con.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("CREATE TABLE IF NOT EXISTS irs(ir_id SERIAL PRIMARY KEY, title TEXT NOT NULL, date_start TEXT NOT NULL, date_end TEXT NOT NULL,is_visible INTEGER NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+            cur.execute("select * from irs order by ir_id desc")
+            all_ir_data = cur.fetchall()
+            return render_template("all_ranking_template.html", all_ir=all_ir_data)
 
 
 @app.route("/rankings/add_ranking/")
@@ -297,9 +272,11 @@ def format_and_add_ranking():
         date_start = request.form['date_start']
         date_end = request.form['date_end']
         pass_raw = request.form['password']
+        is_visible = request.form['Radios']
         password_sha256ed, salt = calc_hash(pass_raw)
         if datetime.datetime.strptime(date_start, '%Y-%m-%d') < datetime.datetime.strptime(date_end, '%Y-%m-%d'):
-            add_ranking(title, date_start, date_end, password_sha256ed, salt)
+            add_ranking(title, date_start, date_end,
+                        is_visible, password_sha256ed, salt)
             added_successfully()
             return redirect(url_for("show_all_rankings"))
         else:
@@ -335,7 +312,7 @@ def modify_ir(id):
         date_start = request.form['date_start']
         date_end = request.form['date_end']
         pass_raw = request.form['password']
-
+        is_visible = request.form['Radios']
         ir_data = get_one_ranking(id)
 
         salt = ir_data['salt']
@@ -343,13 +320,12 @@ def modify_ir(id):
 
         if(can_auth(pass_raw, salt, pass_hashed)):
             if datetime.datetime.strptime(date_start, '%Y-%m-%d') < datetime.datetime.strptime(date_end, '%Y-%m-%d'):
+                with connect() as con:
+                    with con.cursor(cursor_factory=DictCursor) as cur:
+                        cur.execute("update irs set title=%s,date_start=%s,date_end=%s,is_visible=%s where ir_id=%s", (
+                            ir_title, date_start, date_end, int(is_visible), id))
+                        con.commit()
                 modified_successfully()
-                con = connect("./db/ir_db.db")
-                cur = con.cursor()
-                cur.execute("update irs set title=:title,date_start=:date_start,date_end=:date_end where id=:id", {
-                    'id': id, 'title': ir_title, 'date_start': date_start, 'date_end': date_end})
-                con.commit()
-                con.close()
                 return redirect(url_for("show_all_rankings"))
             else:
                 invalid_input()
@@ -399,24 +375,14 @@ def get_ir_pass(id):
 @app.route("/rankings/status/<id>/delete/post/", methods=['POST'])
 def delete_ranking(id):
     if is_logged_in():
-        pass_row = request.form['password']
-
-        path = "./db/ir_db.db"
-        con = connect(path)
-        con.row_factory = Row
-        cur = con.cursor()
-        cur.execute("select * from irs where id=:id", {'id': id})
-        ir_data = cur.fetchone()
-
-        if can_auth(pass_row, ir_data['salt'], ir_data['password_sha_256ed_with_salt']):
-            cur.execute("delete from irs where id=:id", {'id': id})
-            con.commit()
-            con.close()
+        pass_raw = request.form['password']
+        ir_data = get_one_ranking(id)
+        if can_auth(pass_raw, ir_data['salt'], ir_data['password_sha_256ed_with_salt']):
+            with connect() as con:
+                with con.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute("delete from irs where ir_id=%s", (id,))
+                    con.commit()
             deleted_successfully()
-            # もしディレクトリも削除するなら、以下のコメントアウトを外す
-            # path = "./db/"
-            # path += str(id)
-            # shutil.rmtree(path)
             return redirect(url_for("show_all_rankings"))
         else:
             wrong_password()
@@ -428,58 +394,79 @@ def delete_ranking(id):
 
 @app.route("/rankings/status/<ir_id>/songs/<songs_id>/submissions/")
 def show_all_submissions(ir_id, songs_id):
-    songs_data = get_one_song(ir_id, songs_id)
+    songs_data = get_one_song(songs_id)
     ir_data = get_one_ranking(ir_id)
     tw = None
     if 'tweet' in session:
         tw = session['tweet']
     now = datetime.datetime.today()
 
-    return render_template("all_submissions_template.html", title=songs_data['title'], model=songs_data['model'], all_submissions=get_all_submissions(ir_id, songs_id), now=now, date_start=datetime.datetime.strptime(ir_data['date_start'], '%Y-%m-%d'), date_end=datetime.datetime.strptime(ir_data['date_end'], '%Y-%m-%d'), ir_title=ir_data['title'], tweet=tw)
+    return render_template("all_submissions_template.html", title=songs_data['title'], model=songs_data['model'], all_submissions=get_all_submissions(songs_id, int(ir_data['is_visible'])), now=now, date_start=datetime.datetime.strptime(ir_data['date_start'], '%Y-%m-%d'), date_end=datetime.datetime.strptime(ir_data['date_end'], '%Y-%m-%d'), ir_title=ir_data['title'], tweet=tw)
 
 
 @app.route("/rankings/status/<ir_id>/songs/<songs_id>/submissions/export/")
+def get_ir_password(ir_id, songs_id):
+    ir_data = get_one_ranking(ir_id)
+    songs_data = get_one_song(songs_id)
+    if is_logged_in():
+        return render_template("download.html", ir_title=ir_data['title'], title=songs_data['title'])
+    else:
+        needs_login()
+        return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
+
+
+@app.route("/rankings/status/<ir_id>/songs/<songs_id>/submissions/export/post/", methods=['POST'])
 def make_csv(ir_id, songs_id):
+    ir_data = get_one_ranking(ir_id)
+    songs_data = get_one_song(songs_id)
+    pass_raw = request.form['password']
+    titl = [ir_data['title']]
+    titl.append(songs_data['title'])
     header = ['name', 'score', 'comment']
     path = "./db/" + str(ir_id) + "/export_" + \
         str(ir_id) + "_" + str(songs_id) + ".csv"
     file_name = "export_" + str(ir_id) + "_" + str(songs_id) + ".csv"
     with open(path, 'w', newline='', encoding='utf_8_sig') as f:
         writer = csv.writer(f)
+        writer.writerow(titl)
         writer.writerow(header)
         sub_datas = get_all_submissions(ir_id, songs_id)
         for data in sub_datas:
             target = [data['name'], data['score'], data['comment']]
             writer.writerow(target)
-    return send_file(path, as_attachment=True, attachment_filename=file_name, mimetype="text/csv")
+    if is_logged_in():
+        if can_auth(pass_raw, ir_data['salt'], ir_data['password_sha_256ed_with_salt']):
+            return send_file(path, as_attachment=True, attachment_filename=file_name, mimetype="text/csv")
+        else:
+            wrong_password()
+            return redirect(url_for("get_ir_password", ir_id=ir_id, songs_id=songs_id))
+    else:
+        needs_login()
+        return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
 
 
 @app.route("/rankings/status/<ir_id>/songs/<songs_id>/delete/")
 def get_songs_pass(ir_id, songs_id):
     if is_logged_in():
-        songs_data = get_one_song(ir_id, songs_id)
+        songs_data = get_one_song(songs_id)
         ir_data = get_one_ranking(ir_id)
         return render_template("delete.html", title=ir_data['title']+"から"+songs_data['title'])
     else:
         needs_login()
-        return redirect(url_for("show_ranking_details", id=id))
+        return redirect(url_for("show_ranking_details", id=ir_id))
 
 
 @app.route("/rankings/status/<ir_id>/songs/<songs_id>/delete/post/", methods=['POST'])
 def delete_songs(ir_id, songs_id):
     if is_logged_in():
         pass_raw = request.form['password']
-        path = gen_songs_path(ir_id)
-        con = connect(path)
-        con.row_factory = Row
-        cur = con.cursor()
-        cur.execute("select * from songs where id=:id", {'id': songs_id})
-        songs_data = cur.fetchone()
-
+        songs_data = get_one_song(songs_id)
         if can_auth(pass_raw, songs_data['salt'], songs_data['password_sha_256ed_with_salt']):
-            cur.execute("delete from songs where id=:id", {'id': songs_id})
-            con.commit()
-            con.close()
+            with connect() as con:
+                with con.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute(
+                        "delete from songs where songs_id=%s", (songs_id,))
+                    con.commit()
             deleted_successfully()
             return redirect(url_for("show_ranking_details", id=ir_id))
         else:
@@ -493,7 +480,7 @@ def delete_songs(ir_id, songs_id):
 @app.route("/rankings/status/<ir_id>/songs/<songs_id>/modify/")
 def get_song_mod(ir_id, songs_id):
     if is_logged_in():
-        songs_data = get_one_song(ir_id, songs_id)
+        songs_data = get_one_song(songs_id)
         ir_data = get_one_ranking(ir_id)
         return render_template("modify_song.html", ir_title=ir_data['title'], model=songs_data['model'], title=songs_data['title'])
     else:
@@ -505,19 +492,16 @@ def get_song_mod(ir_id, songs_id):
 def modify_song(ir_id, songs_id):
     if is_logged_in():
         ir_data = get_one_ranking(ir_id)
-        songs_data = get_one_song(ir_id, songs_id)
+        songs_data = get_one_song(songs_id)
         model = request.form['model']
         title = request.form['title']
         pass_raw = request.form['password']
         if can_auth(pass_raw, songs_data['salt'], songs_data['password_sha_256ed_with_salt']):
-
-            path = gen_songs_path(ir_id)
-            con = connect(path)
-            cur = con.cursor()
-            cur.execute("update songs set model=:model, title=:title where id=:id", {
-                'model': model, 'title': title, 'id': songs_id})
-            con.commit()
-            con.close()
+            with connect() as con:
+                with con.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute("update songs set model=%s, title=%s where songs_id=%s", (
+                        model, title, songs_id))
+                    con.commit()
             modified_successfully()
             return redirect(url_for("show_ranking_details", id=ir_id))
         else:
@@ -547,10 +531,12 @@ def format_and_add_submission(ir_id, songs_id):
         pass_raw = request.form['password']
         password_sha256ed, salt = calc_hash(pass_raw)
         add_submission(name, songs_id, score, url,
-                       comment, password_sha256ed, salt, ir_id)
+                       comment, password_sha256ed, salt)
         ir_data = get_one_ranking(ir_id)
-        songs_data = get_one_song(ir_id, songs_id)
-        st = ir_data['title'] + "の" + songs_data['title'] + "に登録しました！\nスコア:" + str(score) +"\nコメント:"+ comment + "\n締め切りは"+ir_data['date_end']+"まで！\n#PUCIR"
+        songs_data = get_one_song(songs_id)
+        st = ir_data['title'] + "の" + songs_data['title'] + "に登録しました！\nスコア:" + \
+            str(score) + "\nコメント:" + comment + "\n締め切りは" + \
+            ir_data['date_end']+"まで！\n#PUCIR"
         session['tweet'] = st
         uploaded_successfully()
         return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
@@ -563,7 +549,7 @@ def format_and_add_submission(ir_id, songs_id):
 def get_submission_pass(ir_id, songs_id, sub_id):
     if is_logged_in():
         ir_data = get_one_ranking(ir_id)
-        songs_data = get_one_song(ir_id, songs_id)
+        songs_data = get_one_song(songs_id)
 
         return render_template("delete.html", title=ir_data['title']+"の"+songs_data['title']+"への提出")
     else:
@@ -575,16 +561,14 @@ def get_submission_pass(ir_id, songs_id, sub_id):
 def delete_submissions(ir_id, songs_id, sub_id):
     if is_logged_in():
         pass_raw = request.form['password']
-        path = gen_sub_path(ir_id)
-        con = connect(path)
-        con.row_factory = Row
-        cur = con.cursor()
-        cur.execute("select * from submissions where id=:id", {'id': sub_id})
-        sub_data = cur.fetchone()
+        sub_data = get_one_submission(sub_id)
 
         if(can_auth(pass_raw, sub_data['salt'], sub_data['password_sha_256ed_with_salt'])):
-            cur.execute("delete from submissions where id=:id", {'id': sub_id})
-            con.commit()
+            with connect() as con:
+                with con.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute(
+                        "delete from submissions where sub_id=%s", (sub_id,))
+                    con.commit()
             deleted_successfully()
             return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
         else:
@@ -599,8 +583,8 @@ def delete_submissions(ir_id, songs_id, sub_id):
 def get_sub_mod(ir_id, songs_id, sub_id):
     if is_logged_in():
         ir_data = get_one_ranking(ir_id)
-        songs_data = get_one_song(ir_id, songs_id)
-        sub_data = get_one_submission(ir_id, songs_id, sub_id)
+        songs_data = get_one_song(songs_id)
+        sub_data = get_one_submission(sub_id)
         return render_template("modify_submission.html", ir_title=ir_data['title'], title=songs_data['title'], name=sub_data['name'], score=sub_data['score'], url=sub_data['url'], comment=sub_data['comment'])
     else:
         needs_login()
@@ -611,23 +595,21 @@ def get_sub_mod(ir_id, songs_id, sub_id):
 def modify_sub(ir_id, songs_id, sub_id):
     if is_logged_in():
         ir_data = get_one_ranking(ir_id)
-        songs_data = get_one_song(ir_id, songs_id)
-        sub_data = get_one_submission(ir_id, songs_id, sub_id)
+        songs_data = get_one_song(songs_id)
+        sub_data = get_one_submission(sub_id)
         name = request.form['name']
         score = request.form['score']
         url = request.form['url']
         comment = request.form['comment']
         pass_raw = request.form['password']
         if can_auth(pass_raw, sub_data['salt'], sub_data['password_sha_256ed_with_salt']):
-            modified_successfully()
-            path = gen_sub_path(ir_id)
-            con = connect(path)
-            cur = con.cursor()
-            cur.execute("update submissions set name=:name,score=:score,url=:url,comment=:comment where id=:id", {
-                'name': name, 'score': score, 'url': url, 'comment': comment, 'id': sub_id})
-            con.commit()
-            con.close()
-            return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
+            with connect() as con:
+                with con.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute("update submissions set name=%s,score=%s,url=%s,comment=%s where sub_id=%s", (
+                        name, score, url, comment, sub_id))
+                    con.commit()
+                    con.close()
+                    return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
         else:
             wrong_password()
             return redirect(url_for("get_sub_mod", ir_id=ir_id, songs_id=songs_id, sub_id=sub_id, ir_title=ir_data['title'], title=songs_data['title'], name=sub_data['name'], score=sub_data['score'], url=sub_data['url'], comment=sub_data['comment']))

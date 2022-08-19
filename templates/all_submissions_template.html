@@ -73,16 +73,20 @@
 						<tr>
 							<th>{{i.name}}</th>
 							<th>{{i.belongs}}</th>
+							{% if i.is_visible == 1 %}
 							<th><a href={{i.url}}>{{i.score}}</a></th>
+							{% else %}
+							<th></th>
+							{% endif %}
 							<th>{{i.comment}}</th>
 							<th>
 								{% if session['id'] is defined %}
-								<a href="./{{i.id}}/modify/">編集</a>
+								<a href="./{{i.sub_id}}/modify/">編集</a>
 								{% endif %}
 							</th>
 							<th>
 								{% if session['id'] is defined %}
-								<a href="./{{i.id}}/delete/">削除</a>
+								<a href="./{{i.sub_id}}/delete/">削除</a>
 								{% endif %}
 							</th>
 						</tr>

@@ -29,6 +29,19 @@
 			<input type="date" class="form-control" id="floating_date_end" name="date_end" required>
 			<label for="floating_date_end">終了日時</label>
 		</div>
+		スコアを非表示にしますか？(イベントの予選など、スコアの管理は運営のみが行えればよいときに「はい」を選択してください。)
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Radios" id="Radios_No" value="1" checked>
+			<label class="form-check-label" for="Radios_No">
+				いいえ
+			</label>
+		</div>
+		<div class="form-check">
+			<input class="form-check-input" type="radio" name="Radios" id="Radios_Yes" value="0">
+			<label class="form-check-label" for="Radios_Yes">
+				はい
+			</label>
+		</div>
 		<div class="form-floating">
 			<input type="text" class="form-control" id="floating_pass" name="password">
 			<label for="floating_pass">編集/削除パス(漏洩してもいいものだけ使ってください)</label>
