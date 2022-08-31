@@ -441,7 +441,7 @@ def make_csv(ir_id, songs_id):
             writer.writerow(target)
     if is_logged_in():
         if can_auth(pass_raw, ir_data['salt'], ir_data['password_sha_256ed_with_salt']):
-            return send_file(path, as_attachment=True, attachment_filename=file_name, mimetype="text/csv")
+            return send_file(path, as_attachment=True, download_name=file_name, mimetype="text/csv")
         else:
             wrong_password()
             return redirect(url_for("get_ir_password", ir_id=ir_id, songs_id=songs_id))
