@@ -132,7 +132,7 @@ def get_songs_information(ir_id):
             return songs_data
 
 
-def get_all_submissions(songs_id, is_visible):
+def get_all_submissions(songs_id, is_visible=1):
     with connect() as con:
         with con.cursor(cursor_factory=DictCursor) as cur:
             cur.execute("CREATE TABLE IF NOT EXISTS submissions(sub_id SERIAL PRIMARY KEY,name TEXT NOT NULL,songs_id INTEGER NOT NULL, score INTEGER NOT NULL, url TEXT, comment TEXT NOT NULL, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL,belongs TEXT)")
@@ -377,9 +377,14 @@ def delete_ranking(id):
     if is_logged_in():
         pass_raw = request.form['password']
         ir_data = get_one_ranking(id)
+        songs_data = get_songs_information(id)
         if can_auth(pass_raw, ir_data['salt'], ir_data['password_sha_256ed_with_salt']):
             with connect() as con:
                 with con.cursor(cursor_factory=DictCursor) as cur:
+                    for i in songs_data:
+                        cur.execute("delete from submissions where songs_id=%s", (i['songs_id'],))
+                        con.commit()
+                    cur.execute("delete from songs where ir_id=%s", (id,))
                     cur.execute("delete from irs where ir_id=%s", (id,))
                     con.commit()
             deleted_successfully()
@@ -464,6 +469,8 @@ def delete_songs(ir_id, songs_id):
         if can_auth(pass_raw, songs_data['salt'], songs_data['password_sha_256ed_with_salt']):
             with connect() as con:
                 with con.cursor(cursor_factory=DictCursor) as cur:
+                    cur.execute(
+                        "delete from submissions where songs_id=%s", (songs_id,))
                     cur.execute(
                         "delete from songs where songs_id=%s", (songs_id,))
                     con.commit()
@@ -608,8 +615,8 @@ def modify_sub(ir_id, songs_id, sub_id):
                     cur.execute("update submissions set name=%s,score=%s,url=%s,comment=%s where sub_id=%s", (
                         name, score, url, comment, sub_id))
                     con.commit()
-                    con.close()
-                    return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
+            modified_successfully()
+            return redirect(url_for("show_all_submissions", ir_id=ir_id, songs_id=songs_id))
         else:
             wrong_password()
             return redirect(url_for("get_sub_mod", ir_id=ir_id, songs_id=songs_id, sub_id=sub_id, ir_title=ir_data['title'], title=songs_data['title'], name=sub_data['name'], score=sub_data['score'], url=sub_data['url'], comment=sub_data['comment']))
