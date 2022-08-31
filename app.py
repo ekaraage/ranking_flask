@@ -382,7 +382,8 @@ def delete_ranking(id):
             with connect() as con:
                 with con.cursor(cursor_factory=DictCursor) as cur:
                     for i in songs_data:
-                        cur.execute("delete from submissions where songs_id=%s", (i['songs_id'],))
+                        cur.execute(
+                            "delete from submissions where songs_id=%s", (i['songs_id'],))
                         con.commit()
                     cur.execute("delete from songs where ir_id=%s", (id,))
                     cur.execute("delete from irs where ir_id=%s", (id,))
@@ -428,7 +429,7 @@ def make_csv(ir_id, songs_id):
     titl = [ir_data['title']]
     titl.append(songs_data['title'])
     header = ['name', 'score', 'comment']
-    path = "./db/" + str(ir_id) + "/export_" + \
+    path = "./db/export_" + \
         str(ir_id) + "_" + str(songs_id) + ".csv"
     file_name = "export_" + str(ir_id) + "_" + str(songs_id) + ".csv"
     with open(path, 'w', newline='', encoding='utf_8_sig') as f:
