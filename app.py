@@ -436,7 +436,7 @@ def make_csv(ir_id, songs_id):
         writer = csv.writer(f)
         writer.writerow(titl)
         writer.writerow(header)
-        sub_datas = get_all_submissions(ir_id, songs_id)
+        sub_datas = get_all_submissions(songs_id)
         for data in sub_datas:
             target = [data['name'], data['score'], data['comment']]
             writer.writerow(target)
