@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block title %}アカウントの追加 - {{super()}}{% endblock %}
+{% block head %}{% endblock %}
+
+{% block content %}
+<main class="form-signin col-9 mx-auto">
+	<form method="POST" action="./post/">
+		<h4 class="h4 my-2 fw-normal">追加するアカウントの情報を入力してください。</h4>
+		<div class="form-floating">
+			<input type="text" class="form-control" id="floating_id" name="id" required>
+			<label for="floating_model">ID</label>
+		</div>
+		<div class="form-floating">
+			<input type="password" class="form-control" id="floating_pass" name="password" required>
+			<label for="floating_title">Pass</label>
+		</div>
+		<button class="btn btn-lg btn-primary w-100 mt-2" type="submit">決定</button>
+	</form>
+</main>
+{% endblock %}

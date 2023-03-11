@@ -214,7 +214,6 @@ def get_contest_detail_in_json(id):
 def get_login_info():
     return render_template("login.html")
 
-
 @app.route("/login/post/", methods=['POST'])
 def login():
     id = request.form['id']
@@ -227,6 +226,24 @@ def login():
         flash("ログインに成功しました。", "alert-success")
         session['id'] = id
         return redirect(url_for("index"))
+
+@app.route("/reg/")
+def get_reg_info():
+    return render_template("reg.html")
+
+@app.route("/reg/post/", methods=['POST'])
+def register():
+    id = request.form['id']
+    pass_raw = request.form['password']
+    password_sha_256ed_with_salt, salt = calc_hash(pass_raw)
+    with connect() as con:
+        with con.cursor() as cur:
+            cur.execute(
+                "CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, password_sha_256ed_with_salt TEXT,salt TEXT NOT NULL)")
+            cur.execute("insert into users(id,password_sha_256ed_with_salt,salt) values (%s,%s,%s)", (
+                id, password_sha_256ed_with_salt, salt))
+            con.commit()
+    return redirect(url_for("index"))
 
 
 @app.route("/logout/")
