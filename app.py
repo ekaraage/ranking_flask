@@ -293,7 +293,7 @@ def format_and_add_ranking():
         password_sha256ed, salt = calc_hash(pass_raw)
         if datetime.datetime.strptime(date_start, '%Y-%m-%d') < datetime.datetime.strptime(date_end, '%Y-%m-%d'):
             add_ranking(title, date_start, date_end,
-                        is_visible, password_sha256ed, salt)
+                        int(is_visible), password_sha256ed, salt)
             added_successfully()
             return redirect(url_for("show_all_rankings"))
         else:
