@@ -154,7 +154,7 @@ def can_auth(pass_raw, salt, password_sha256_ed):
 
 
 def gen_salt():
-    chars = "0123456789abcdefghijklmnopqrstuvwxABCDEFGHIJKLMNOPQRSTUVWX"
+    chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     res = ""
     for i in range(8):
         t = random.randint(0, len(chars)-1)
